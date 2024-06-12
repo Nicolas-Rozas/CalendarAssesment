@@ -11,7 +11,7 @@ import axios from "axios";
 import { styles } from "./styles";
 import { ClockIcon } from "react-native-heroicons/outline";
 import { CheckCircleIcon } from "react-native-heroicons/solid";
-import { ChallengeData } from "@/app/models/ChallengeData";
+import { useNavigation } from "@react-navigation/native";
 
 const monthNames = [
   "January",
@@ -31,26 +31,23 @@ const monthNames = [
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const CalendarComponent = () => {
-  const [data, setData] = useState<ChallengeData | null>(null);
+  const [data, setData] = useState<{ calendar: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigation = useNavigation();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(
-          "https://xjvq5wtiye.execute-api.us-east-1.amazonaws.com/interview/api/v1/challenge"
-        );
-        setData(response.data);
-        setLoading(false);
-      } catch (error) {
-        setError("Failed to fetch data");
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const fetchData = async () => {
+    try {
+      const response = await axios.get(
+        "https://xjvq5wtiye.execute-api.us-east-1.amazonaws.com/interview/api/v1/challenge"
+      );
+      setData(response.data);
+      setLoading(false);
+    } catch (error) {
+      setError("Failed to fetch data");
+      setLoading(false);
+    }
+  };
 
   const getBackgroundColor = (status) => {
     switch (status) {
@@ -88,6 +85,14 @@ const CalendarComponent = () => {
     }
   };
 
+  const navigateToDetail = (action: any) => {
+    navigation.navigate("Detail", {
+      action,
+      loading,
+      refreshMainPage: fetchData,
+    });
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.mainContainer}>
@@ -104,10 +109,14 @@ const CalendarComponent = () => {
     );
   }
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   return (
     <SafeAreaView style={styles.mainContainer}>
       <ScrollView horizontal={false}>
-        {data?.calendar.map((monthData) => (
+        {data?.calendar?.map((monthData) => (
           <View key={`${monthData.month}-${monthData.year}`}>
             <Text style={[styles.monthHeader, styles.monthHeader]}>
               {getMonthName(monthData.month)} {monthData.year}
@@ -122,6 +131,7 @@ const CalendarComponent = () => {
                     {getIconComponent(action.status)}
                   </View>
                   <TouchableOpacity
+                    onPress={() => navigateToDetail(action)}
                     style={[
                       styles.actionContainer,
                       {
